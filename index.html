@@ -134,7 +134,7 @@
         <h1>Kuba & Ola <i class="fa-solid fa-earth-europe"></i></h1>
         <div class="stats-container">
             <div class="stat-box">Odwiedzone kraje<span class="stat-value" id="count-countries">0</span></div>
-            <div class="stat-box">Zrealizowane podróże<span class="stat-value" id="count-trips">0</span></div>
+            <div class="stat-box">Łącznie podróży<span class="stat-value" id="count-trips">0</span></div>
             <div class="stat-box">Łącznie wydaliśmy<span class="stat-value" id="total-cost">0 zł</span></div>
         </div>
     </div>
@@ -159,7 +159,7 @@
             <div class="input-group"><input type="text" id="input-country" placeholder="Kraj (Wyszukiwanie...)" required autocomplete="off"></div>
             
             <div class="input-group">
-                <label id="date-label">Kiedy tam byliście?</label>
+                <label id="date-label">Kiedy byliśmy?</label>
                 <input type="date" id="input-date" autocomplete="off">
             </div>
 
@@ -265,15 +265,15 @@
                 modalTitle.style.color = "var(--plan-color)";
                 photosGroup.style.display = "none";
                 inputCost.placeholder = "Planowany budżet (w zł)";
-                dateLabel.innerText = "Kiedy planujecie lecieć?";
-                inputSummary.placeholder = "Co chcecie tam zobaczyć? Plan wycieczki...";
+                dateLabel.innerText = "Kiedy planujemy lecieć?";
+                inputSummary.placeholder = "Co chcemy zobaczyć? Plan wycieczki...";
                 btnSave.classList.add('plan-mode-btn');
             } else {
                 modalTitle.innerHTML = "Nowe wspomnienie ✨";
                 modalTitle.style.color = "var(--primary)";
                 photosGroup.style.display = "block";
-                inputCost.placeholder = "Wydano (w zł)";
-                dateLabel.innerText = "Kiedy tam byliście?";
+                inputCost.placeholder = "Wydaliśmy (w zł)";
+                dateLabel.innerText = "Kiedy byliśmy?";
                 inputSummary.placeholder = "Krótkie podsumowanie lub wspomnienie z tego miejsca...";
                 btnSave.classList.remove('plan-mode-btn');
             }
