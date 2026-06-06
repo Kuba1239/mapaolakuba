@@ -5,9 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Kuba & Ola - Mapa Wspomnień</title>
     
-	
-<link rel="apple-touch-icon" href="ik.jpg">
-<link rel="icon" type="image/png" href="ik.jpg">
+    <link rel="apple-touch-icon" href="ik.jpg">
+    <link rel="icon" type="image/png" href="ik.jpg">
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -19,6 +18,8 @@
         :root {
             --primary: #ff6b6b;
             --primary-hover: #ff4757;
+            --plan-color: #f1c40f; 
+            --plan-hover: #f39c12;
             --dark-glass: rgba(25, 25, 25, 0.75);
             --darker-glass: rgba(15, 15, 15, 0.9);
             --text-main: #ffffff;
@@ -29,7 +30,6 @@
         
         #map { position: absolute; top: 0; bottom: 0; left: 0; right: 0; z-index: 1; background-color: #141414 !important; }
 
-        /* Ukrycie białego prostokąta z napisem Leaflet / OpenStreetMap */
         .leaflet-control-attribution { display: none !important; }
 
         .glass-panel { background: var(--dark-glass); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4); }
@@ -41,8 +41,16 @@
         .stat-box { display: flex; flex-direction: column; align-items: center; }
         .stat-value { font-size: 18px; font-weight: 700; color: var(--primary); margin-top: 4px; }
 
-        #sidebar-toggle { position: absolute; top: 20px; right: 20px; z-index: 1000; padding: 12px 20px; border-radius: 30px; background: var(--primary); color: white; border: none; font-family: 'Montserrat', sans-serif; font-weight: 600; font-size: 14px; cursor: pointer; box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4); transition: 0.3s; display: flex; align-items: center; gap: 8px; }
+        /* Przyciski główne na mapie */
+        .action-btn { position: absolute; z-index: 1000; padding: 12px 20px; border-radius: 30px; border: none; font-family: 'Montserrat', sans-serif; font-weight: 600; font-size: 14px; cursor: pointer; transition: 0.3s; display: flex; align-items: center; gap: 8px; }
+        #sidebar-toggle { top: 20px; right: 20px; background: var(--primary); color: white; box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4); }
         #sidebar-toggle:hover { background: var(--primary-hover); transform: translateY(-2px); }
+        #btn-plan { top: 20px; left: 20px; background: var(--plan-color); color: #111; box-shadow: 0 4px 15px rgba(241, 196, 15, 0.4); }
+        #btn-plan:hover { background: var(--plan-hover); transform: translateY(-2px); }
+
+        /* Toast informacyjny */
+        #toast-hint { position: absolute; top: 110px; left: 50%; transform: translateX(-50%); background: var(--plan-color); color: #111; font-weight: 700; padding: 12px 25px; border-radius: 20px; z-index: 2000; display: none; font-size: 14px; box-shadow: 0 8px 25px rgba(0,0,0,0.6); pointer-events: none; text-align: center; width: max-content; max-width: 90%; animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { transform: translateX(-50%) scale(1); } 50% { transform: translateX(-50%) scale(1.05); } 100% { transform: translateX(-50%) scale(1); } }
 
         #sidebar { position: absolute; top: 0; right: -400px; width: 350px; height: 100vh; z-index: 1001; background: var(--darker-glass); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-left: 1px solid rgba(255, 255, 255, 0.1); transition: right 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); display: flex; flex-direction: column; box-sizing: border-box; }
         #sidebar.open { right: 0; }
@@ -69,15 +77,15 @@
         .place-header { display: flex; justify-content: space-between; margin-bottom: 5px; }
         .place-name { font-weight: 600; font-size: 14px; }
         .place-cost { color: #ccc; font-size: 12px; }
-        .place-summary { font-size: 12px; color: var(--text-muted); font-style: italic; line-height: 1.4; }
+        .place-summary { font-size: 12px; color: var(--text-muted); font-style: italic; line-height: 1.4; margin-top: 4px;}
 
         #modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(5px); z-index: 2000; justify-content: center; align-items: center; }
-        .modal-content { padding: 25px; border-radius: 20px; width: 320px; max-width: 90%; text-align: center; position: relative; }
-        .modal-content h3 { margin-top: 0; color: var(--primary); font-size: 22px; }
+        .modal-content { padding: 25px; border-radius: 20px; width: 320px; max-width: 90%; text-align: center; position: relative; max-height: 90vh; overflow-y: auto;}
+        .modal-content h3 { margin-top: 0; color: var(--primary); font-size: 22px; transition: 0.3s;}
         .input-group { margin-bottom: 12px; text-align: left; }
         .input-group label { display: block; font-size: 11px; color: var(--text-muted); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px;}
         
-        .modal-content input[type="text"], .modal-content input[type="number"], .modal-content textarea { width: 100%; padding: 12px; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255,255,255,0.15); color: white; border-radius: 10px; font-family: 'Montserrat', sans-serif; box-sizing: border-box; outline: none; transition: border-color 0.3s; }
+        .modal-content input[type="text"], .modal-content input[type="number"], .modal-content input[type="date"], .modal-content textarea { width: 100%; padding: 12px; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255,255,255,0.15); color: white; border-radius: 10px; font-family: 'Montserrat', sans-serif; box-sizing: border-box; outline: none; transition: border-color 0.3s; color-scheme: dark;}
         .modal-content input:focus, .modal-content textarea:focus { border-color: var(--primary); }
         .modal-content textarea { resize: vertical; min-height: 60px; }
         .modal-content input[type="file"] { width: 100%; font-size: 12px; color: #aaa; margin-bottom: 15px;}
@@ -87,13 +95,16 @@
         .btn:disabled { opacity: 0.6; cursor: not-allowed; }
         .btn-cancel { background: rgba(255,255,255,0.1); color: white; }
         .btn-save { background: linear-gradient(45deg, #ff6b6b, #ff4757); color: white; }
+        .btn-save.plan-mode-btn { background: linear-gradient(45deg, #f1c40f, #e67e22); color: #111; }
 
         .leaflet-popup-content-wrapper { background: var(--dark-glass); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); color: #ffffff; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         .leaflet-popup-tip { background: var(--dark-glass); }
         .leaflet-popup-content { font-family: 'Montserrat', sans-serif; margin: 15px; width: max-content; max-width: 280px; }
         .popup-title { color: var(--primary); font-size: 16px; font-weight: 700; margin-bottom: 5px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px;}
+        .popup-title.plan-title { color: var(--plan-color); }
         .popup-detail { font-size: 13px; color: #ddd; margin: 4px 0; display: flex; align-items: center; gap: 6px; }
         .popup-desc { margin-top: 8px; font-size: 12px; color: #aaa; font-style: italic; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 8px; border-left: 2px solid var(--primary);}
+        .popup-desc.plan-desc { border-left-color: var(--plan-color); }
         .popup-gallery { display: flex; gap: 8px; margin-top: 12px; overflow-x: auto; padding-bottom: 5px; }
         .popup-gallery img { width: 120px; height: 90px; object-fit: cover; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); flex-shrink: 0;}
         .leaflet-bar a { background-color: rgba(30,30,30,0.8) !important; color: #fff !important; border-bottom: 1px solid #444 !important; backdrop-filter: blur(5px);}
@@ -102,14 +113,17 @@
         .btn-delete-pin:hover { background: var(--primary); color: white; }
 
         @media (max-width: 600px) {
-            /* Podniesiono panel ze statystykami na telefonach z powrotem na 15px */
             #header { top: 15px; padding: 12px 10px; width: 90%; }
             #header h1 { font-size: 18px; }
             .stats-container { gap: 5px; font-size: 10px; }
             .stat-value { font-size: 14px; }
             
             #sidebar { width: 100%; right: -100%; }
-            #sidebar-toggle { top: auto; bottom: 25px; left: 50%; transform: translateX(-50%); right: auto; padding: 10px 18px; font-size: 13px; border-radius: 30px;}
+            #sidebar-toggle { top: auto; bottom: 25px; right: 15px; padding: 12px 15px; font-size: 13px;}
+            #btn-plan { top: auto; bottom: 25px; left: 15px; padding: 12px 15px; font-size: 13px;}
+            
+            /* Zmiana pozycji komunikatu "Wskaż palcem..." żeby nie najeżdżał na statystyki */
+            #toast-hint { top: auto; bottom: 85px; font-size: 13px; padding: 12px 18px;}
             .leaflet-control-zoom { display: none; }
         }
     </style>
@@ -120,12 +134,15 @@
         <h1>Kuba & Ola <i class="fa-solid fa-earth-europe"></i></h1>
         <div class="stats-container">
             <div class="stat-box">Odwiedzone kraje<span class="stat-value" id="count-countries">0</span></div>
-            <div class="stat-box">Łącznie podróży<span class="stat-value" id="count-trips">0</span></div>
+            <div class="stat-box">Zrealizowane podróże<span class="stat-value" id="count-trips">0</span></div>
             <div class="stat-box">Łącznie wydaliśmy<span class="stat-value" id="total-cost">0 zł</span></div>
         </div>
     </div>
 
-    <button id="sidebar-toggle"><i class="fas fa-book-open"></i> Dziennik podróży</button>
+    <div id="toast-hint"><i class="fas fa-hand-pointer"></i> Wskaż palcem na mapie cel podróży!</div>
+    
+    <button id="btn-plan" class="action-btn"><i class="fas fa-plane"></i> Gdzie lecimy?</button>
+    <button id="sidebar-toggle" class="action-btn"><i class="fas fa-book-open"></i> Dziennik podróży</button>
 
     <div id="sidebar">
         <div class="sidebar-header">
@@ -137,15 +154,23 @@
 
     <div id="modal-overlay">
         <div class="modal-content glass-panel">
-            <h3>Nowe wspomnienie ✨</h3>
+            <h3 id="modal-title">Nowe wspomnienie ✨</h3>
             <div class="input-group"><input type="text" id="input-name" placeholder="Nazwa miejsca" required autocomplete="off"></div>
             <div class="input-group"><input type="text" id="input-country" placeholder="Kraj (Wyszukiwanie...)" required autocomplete="off"></div>
+            
+            <div class="input-group">
+                <label id="date-label">Kiedy tam byliście?</label>
+                <input type="date" id="input-date" autocomplete="off">
+            </div>
+
             <div class="input-group"><input type="number" id="input-cost" placeholder="Wydano (w zł)" min="0" autocomplete="off"></div>
             <div class="input-group"><textarea id="input-summary" placeholder="Krótkie podsumowanie lub wspomnienie z tego miejsca..."></textarea></div>
-            <div class="input-group">
+            
+            <div class="input-group" id="photos-group">
                 <label>Dodaj zdjęcia (max 2):</label>
                 <input type="file" id="input-photos" accept="image/*" multiple>
             </div>
+            
             <div class="modal-buttons">
                 <button class="btn btn-cancel" id="btn-cancel">Anuluj</button>
                 <button class="btn btn-save" id="btn-save">Zapisz</button>
@@ -178,22 +203,32 @@
             db = getFirestore(app);
         } catch(e) { console.log("Pamiętaj o podaniu konfiguracji Firebase!"); }
 
-        // Dodano attributionControl: false, żeby wyłączyć dolny panel
         const map = L.map('map', { zoomControl: false, attributionControl: false }).setView([50.0, 15.0], 4);
         L.control.zoom({ position: 'bottomleft' }).addTo(map); 
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { subdomains: 'abcd', maxZoom: 20 }).addTo(map);
 
         let markers = L.layerGroup().addTo(map);
         let clickedLatLng = null;
+        let isAddingPlan = false; 
+        let waitingForPlanClick = false; 
 
         const modal = document.getElementById('modal-overlay');
         const btnCancel = document.getElementById('btn-cancel');
         const btnSave = document.getElementById('btn-save');
+        const btnPlan = document.getElementById('btn-plan');
+        const toastHint = document.getElementById('toast-hint');
+        
+        const modalTitle = document.getElementById('modal-title');
+        const photosGroup = document.getElementById('photos-group');
+        const dateLabel = document.getElementById('date-label');
+
         const inputName = document.getElementById('input-name');
         const inputCountry = document.getElementById('input-country');
+        const inputDate = document.getElementById('input-date');
         const inputCost = document.getElementById('input-cost');
         const inputSummary = document.getElementById('input-summary');
         const inputPhotos = document.getElementById('input-photos');
+        
         const sidebar = document.getElementById('sidebar');
         const sidebarToggle = document.getElementById('sidebar-toggle');
         const sidebarClose = document.getElementById('sidebar-close');
@@ -203,25 +238,51 @@
         sidebarClose.addEventListener('click', () => sidebar.classList.remove('open'));
 
         window.usunPinezke = async function(docId) {
-            if(confirm("Czy na pewno chcesz usunąć to wspomnienie? Zniknie ono z mapy i z dziennika.")) {
+            if(confirm("Czy na pewno chcesz usunąć to miejsce? Zniknie ono z mapy i z dziennika.")) {
                 try {
                     await deleteDoc(doc(db, "places", docId));
                 } catch (error) {
                     console.error("Błąd usuwania:", error);
-                    alert("Nie udało się usunąć wspomnienia. Spróbuj ponownie.");
+                    alert("Nie udało się usunąć. Spróbuj ponownie.");
                 }
             }
         };
 
-        map.on('contextmenu', async function(e) {
-            clickedLatLng = e.latlng;
+        // Tryb planowania (Gdzie lecimy?)
+        btnPlan.addEventListener('click', () => {
+            waitingForPlanClick = true;
+            toastHint.style.display = 'block'; 
+        });
+
+        async function openModal(latlng, isPlan) {
+            clickedLatLng = latlng;
+            isAddingPlan = isPlan;
             modal.style.display = 'flex';
             inputName.focus();
+            
+            if(isPlan) {
+                modalTitle.innerHTML = "Gdzie lecimy? ✈️";
+                modalTitle.style.color = "var(--plan-color)";
+                photosGroup.style.display = "none";
+                inputCost.placeholder = "Planowany budżet (w zł)";
+                dateLabel.innerText = "Kiedy planujecie lecieć?";
+                inputSummary.placeholder = "Co chcecie tam zobaczyć? Plan wycieczki...";
+                btnSave.classList.add('plan-mode-btn');
+            } else {
+                modalTitle.innerHTML = "Nowe wspomnienie ✨";
+                modalTitle.style.color = "var(--primary)";
+                photosGroup.style.display = "block";
+                inputCost.placeholder = "Wydano (w zł)";
+                dateLabel.innerText = "Kiedy tam byliście?";
+                inputSummary.placeholder = "Krótkie podsumowanie lub wspomnienie z tego miejsca...";
+                btnSave.classList.remove('plan-mode-btn');
+            }
+
             inputCountry.value = "Szukam kraju...";
             inputCountry.disabled = true; 
 
             try {
-                const response = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${e.latlng.lat}&longitude=${e.latlng.lng}&localityLanguage=pl`);
+                const response = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latlng.lat}&longitude=${latlng.lng}&localityLanguage=pl`);
                 const data = await response.json();
                 inputCountry.disabled = false;
                 if (data.countryName) inputCountry.value = data.countryName;
@@ -229,18 +290,37 @@
             } catch (error) {
                 inputCountry.disabled = false; inputCountry.value = ""; 
             }
+        }
+
+        // Kliknięcie w mapę z aktywowanym trybem planu
+        map.on('click', function(e) {
+            if(waitingForPlanClick) {
+                waitingForPlanClick = false;
+                toastHint.style.display = 'none';
+                openModal(e.latlng, true); 
+            }
+        });
+
+        // Prawy klik / długie przytrzymanie = dodawanie starych wspomnień
+        map.on('contextmenu', function(e) {
+            if(waitingForPlanClick) {
+                waitingForPlanClick = false;
+                toastHint.style.display = 'none';
+            }
+            openModal(e.latlng, false); 
         });
 
         btnCancel.addEventListener('click', () => { modal.style.display = 'none'; czyscFormularz(); });
 
         btnSave.addEventListener('click', async () => {
             const nameVal = inputName.value.trim(); const countryVal = inputCountry.value.trim();
+            const dateVal = inputDate.value; 
             const costVal = parseFloat(inputCost.value) || 0; const summaryVal = inputSummary.value.trim();
             const files = inputPhotos.files;
 
             if (nameVal === "" || countryVal === "") { alert("Wypełnij nazwę i kraj!"); return; }
-            if (files.length > 2) { alert("Max 2 zdjęcia!"); return; }
-            if (IMGBB_API_KEY === "TWÓJ_KLUCZ_API_IMGBB" && files.length > 0) {
+            if (!isAddingPlan && files.length > 2) { alert("Max 2 zdjęcia!"); return; }
+            if (!isAddingPlan && IMGBB_API_KEY === "TWÓJ_KLUCZ_API_IMGBB" && files.length > 0) {
                 alert("Aby dodać zdjęcie, musisz najpierw wkleić klucz API ImgBB w kodzie!"); return;
             }
 
@@ -250,7 +330,7 @@
             try {
                 let photoUrls = [];
                 
-                if(files.length > 0) {
+                if(!isAddingPlan && files.length > 0) {
                     for (let i = 0; i < files.length; i++) {
                         const formData = new FormData();
                         formData.append("image", files[i]);
@@ -272,6 +352,7 @@
                 if(db) {
                     await addDoc(collection(db, "places"), {
                         name: nameVal, country: countryVal.toLowerCase(), displayCountry: countryVal,
+                        date: dateVal, isPlan: isAddingPlan,
                         cost: costVal, summary: summaryVal, lat: clickedLatLng.lat, lng: clickedLatLng.lng,
                         photos: photoUrls, createdAt: new Date()
                     });
@@ -282,7 +363,10 @@
             btnSave.innerHTML = "Zapisz"; btnSave.disabled = false;
         });
 
-        function czyscFormularz() { inputName.value = ""; inputCountry.value = ""; inputCost.value = ""; inputSummary.value = ""; inputPhotos.value = ""; clickedLatLng = null; }
+        function czyscFormularz() { 
+            inputName.value = ""; inputCountry.value = ""; inputDate.value = "";
+            inputCost.value = ""; inputSummary.value = ""; inputPhotos.value = ""; clickedLatLng = null; 
+        }
 
         let worldGeoJson = null;
         let geoJsonLayer = null;
@@ -315,12 +399,7 @@
                     }
 
                     if (isVisited) {
-                        return {
-                            color: "var(--primary)",
-                            weight: 1,
-                            fillColor: "var(--primary)",
-                            fillOpacity: 0.2 
-                        };
+                        return { color: "var(--primary)", weight: 1, fillColor: "var(--primary)", fillOpacity: 0.2 };
                     } else {
                         return { weight: 0, fillOpacity: 0 };
                     }
@@ -339,29 +418,46 @@
                 let totalTrips = 0;
 
                 snapshot.forEach((docSnap) => {
-                    totalTrips++;
                     const data = docSnap.data(); 
-                    
-                    globalPlacesData.push({ lat: data.lat, lng: data.lng });
-
                     const cKey = data.displayCountry || data.country; 
-                    if(data.cost) totalMoney += data.cost;
-                    if(cKey) uniqueCountries.add(cKey);
+                    
+                    // Do statystyk i panelu bocznego dodajemy tylko miejsca już zrealizowane (nie plany)
+                    if (!data.isPlan) {
+                        totalTrips++;
+                        globalPlacesData.push({ lat: data.lat, lng: data.lng });
+                        if(data.cost) totalMoney += data.cost;
+                        if(cKey) uniqueCountries.add(cKey);
 
-                    if(!countryStats[cKey]) countryStats[cKey] = { totalCost: 0, places: [] };
-                    countryStats[cKey].totalCost += (data.cost || 0); countryStats[cKey].places.push(data);
+                        if(!countryStats[cKey]) countryStats[cKey] = { totalCost: 0, places: [] };
+                        countryStats[cKey].totalCost += (data.cost || 0); 
+                        countryStats[cKey].places.push(data);
+                    }
 
-                    const marker = L.marker([data.lat, data.lng]);
-                    let popupHtml = `<div class="popup-title">${data.name}</div><div class="popup-detail"><i class="fas fa-map-marker-alt" style="color:var(--primary)"></i> ${cKey}</div>`;
-                    if(data.cost > 0) popupHtml += `<div class="popup-detail"><i class="fas fa-wallet" style="color:#2ecc71"></i> ${data.cost} zł</div>`;
-                    if(data.summary) popupHtml += `<div class="popup-desc">"${data.summary}"</div>`;
+                    const iconColor = data.isPlan ? "var(--plan-color)" : "var(--primary)";
+                    const customIcon = L.divIcon({ 
+                        html: `<i class="fa-solid fa-location-dot" style="color: ${iconColor}; font-size: 32px; filter: drop-shadow(0px 3px 3px rgba(0,0,0,0.6));"></i>`,
+                        className: '', iconSize: [22, 32], iconAnchor: [11, 32], popupAnchor: [0, -32] 
+                    });
+
+                    const marker = L.marker([data.lat, data.lng], {icon: customIcon});
+                    
+                    let popupHtml = `<div class="popup-title ${data.isPlan ? 'plan-title' : ''}">${data.isPlan ? '<i class="fas fa-plane-departure"></i> MIEJSCE W PLANACH' : data.name}</div>`;
+                    if(data.isPlan) {
+                        popupHtml += `<div class="popup-detail" style="font-weight:bold; color:#fff;">${data.name}</div>`;
+                    }
+                    popupHtml += `<div class="popup-detail"><i class="fas fa-map-marker-alt" style="color:${iconColor}"></i> ${cKey}</div>`;
+                    if(data.date) popupHtml += `<div class="popup-detail"><i class="fas fa-calendar-alt" style="color:#aaa"></i> ${data.date}</div>`;
+                    if(data.cost > 0 && !data.isPlan) popupHtml += `<div class="popup-detail"><i class="fas fa-wallet" style="color:#2ecc71"></i> ${data.cost} zł</div>`;
+                    if(data.cost > 0 && data.isPlan) popupHtml += `<div class="popup-detail"><i class="fas fa-wallet" style="color:#aaa"></i> Budżet: ${data.cost} zł</div>`;
+                    if(data.summary) popupHtml += `<div class="popup-desc ${data.isPlan ? 'plan-desc' : ''}">"${data.summary}"</div>`;
+                    
                     if (data.photos && data.photos.length > 0) {
                         popupHtml += `<div class="popup-gallery">`;
                         data.photos.forEach(url => popupHtml += `<a href="${url}" target="_blank"><img src="${url}"></a>`);
                         popupHtml += `</div>`;
                     }
                     
-                    popupHtml += `<button class="btn-delete-pin" onclick="usunPinezke('${docSnap.id}')"><i class="fas fa-trash"></i> Usuń wspomnienie</button>`;
+                    popupHtml += `<button class="btn-delete-pin" onclick="usunPinezke('${docSnap.id}')"><i class="fas fa-trash"></i> Usuń miejsce</button>`;
 
                     marker.bindPopup(popupHtml); markers.addLayer(marker);
                 });
@@ -374,7 +470,7 @@
 
                 countryListContainer.innerHTML = ""; 
                 const sortedCountries = Object.keys(countryStats).sort();
-                if(sortedCountries.length === 0) countryListContainer.innerHTML = "<p style='color:#aaa; text-align:center; margin-top: 30px;'>Przytrzymaj palec na mapie i dodaj pierwszą podróż!</p>";
+                if(sortedCountries.length === 0) countryListContainer.innerHTML = "<p style='color:#aaa; text-align:center; margin-top: 30px;'>Oznaczcie pierwsze miejsce na mapie!</p>";
 
                 sortedCountries.forEach(countryName => {
                     const stats = countryStats[countryName];
@@ -382,7 +478,9 @@
                     card.innerHTML = `<div class="country-card-header"><div class="country-name"><i class="fas fa-flag" style="color:var(--primary)"></i> ${countryName}</div><div style="display:flex; align-items:center; gap: 10px;">${stats.totalCost > 0 ? `<span class="country-total-cost">${stats.totalCost.toLocaleString('pl-PL')} zł</span>` : ''}<i class="fas fa-chevron-down" style="font-size:12px; color:#aaa;"></i></div></div><div class="country-card-body"></div>`;
                     const body = card.querySelector('.country-card-body');
                     stats.places.forEach(place => {
-                        body.insertAdjacentHTML('beforeend', `<div class="place-item"><div class="place-header"><span class="place-name">${place.name}</span></div>${place.summary ? `<div class="place-summary">${place.summary}</div>` : ''}</div>`);
+                        const planIcon = place.isPlan ? `<i class="fas fa-plane-departure" style="color:var(--plan-color); font-size:10px; margin-right:4px;" title="Plan"></i>` : '';
+                        const dateText = place.date ? `<span style="color:#888; font-size:10px; margin-left:5px; font-weight:normal;">(${place.date})</span>` : '';
+                        body.insertAdjacentHTML('beforeend', `<div class="place-item"><div class="place-header"><span class="place-name">${planIcon}${place.name}${dateText}</span></div>${place.summary ? `<div class="place-summary">${place.summary}</div>` : ''}</div>`);
                     });
                     card.querySelector('.country-card-header').addEventListener('click', () => card.classList.toggle('active'));
                     countryListContainer.appendChild(card);
