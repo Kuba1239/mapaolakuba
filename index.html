@@ -382,7 +382,7 @@
                     card.innerHTML = `<div class="country-card-header"><div class="country-name"><i class="fas fa-flag" style="color:var(--primary)"></i> ${countryName}</div><div style="display:flex; align-items:center; gap: 10px;">${stats.totalCost > 0 ? `<span class="country-total-cost">${stats.totalCost.toLocaleString('pl-PL')} zł</span>` : ''}<i class="fas fa-chevron-down" style="font-size:12px; color:#aaa;"></i></div></div><div class="country-card-body"></div>`;
                     const body = card.querySelector('.country-card-body');
                     stats.places.forEach(place => {
-                        body.insertAdjacentHTML('beforeend', `<div class="place-item"><div class="place-header"><span class="place-name">${place.name}</span>${place.cost ? `<span class="place-cost">${place.cost} zł</span>` : ''}</div>${place.summary ? `<div class="place-summary">${place.summary}</div>` : ''}</div>`);
+                        body.insertAdjacentHTML('beforeend', `<div class="place-item"><div class="place-header"><span class="place-name">${place.name}</span></div>${place.summary ? `<div class="place-summary">${place.summary}</div>` : ''}</div>`);
                     });
                     card.querySelector('.country-card-header').addEventListener('click', () => card.classList.toggle('active'));
                     countryListContainer.appendChild(card);
