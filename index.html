@@ -5,8 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Kuba & Ola - Mapa Wspomnień</title>
     
+	
 <link rel="apple-touch-icon" href="ik.jpg">
-<link rel="icon" type="image/png" href="ik.jpg">	
+<link rel="icon" type="image/png" href="ik.jpg">
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -27,6 +28,9 @@
         body, html { margin: 0; padding: 0; height: 100%; font-family: 'Montserrat', sans-serif; background-color: #121212; color: var(--text-main); overflow: hidden; position: relative; }
         
         #map { position: absolute; top: 0; bottom: 0; left: 0; right: 0; z-index: 1; background-color: #141414 !important; }
+
+        /* Ukrycie białego prostokąta z napisem Leaflet / OpenStreetMap */
+        .leaflet-control-attribution { display: none !important; }
 
         .glass-panel { background: var(--dark-glass); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4); }
 
@@ -98,7 +102,8 @@
         .btn-delete-pin:hover { background: var(--primary); color: white; }
 
         @media (max-width: 600px) {
-            #header { top: 45px; padding: 12px 10px; width: 90%; }
+            /* Podniesiono panel ze statystykami na telefonach z powrotem na 15px */
+            #header { top: 15px; padding: 12px 10px; width: 90%; }
             #header h1 { font-size: 18px; }
             .stats-container { gap: 5px; font-size: 10px; }
             .stat-value { font-size: 14px; }
@@ -173,9 +178,10 @@
             db = getFirestore(app);
         } catch(e) { console.log("Pamiętaj o podaniu konfiguracji Firebase!"); }
 
-        const map = L.map('map', { zoomControl: false }).setView([50.0, 15.0], 4);
+        // Dodano attributionControl: false, żeby wyłączyć dolny panel
+        const map = L.map('map', { zoomControl: false, attributionControl: false }).setView([50.0, 15.0], 4);
         L.control.zoom({ position: 'bottomleft' }).addTo(map); 
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap', subdomains: 'abcd', maxZoom: 20 }).addTo(map);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { subdomains: 'abcd', maxZoom: 20 }).addTo(map);
 
         let markers = L.layerGroup().addTo(map);
         let clickedLatLng = null;
@@ -278,12 +284,10 @@
 
         function czyscFormularz() { inputName.value = ""; inputCountry.value = ""; inputCost.value = ""; inputSummary.value = ""; inputPhotos.value = ""; clickedLatLng = null; }
 
-        // DODANO: Globalne zmienne dla granic państw i bazy pinezek
         let worldGeoJson = null;
         let geoJsonLayer = null;
         let globalPlacesData = []; 
 
-        // Pobieranie mapy granic (GeoJSON) z CDN
         fetch('https://cdn.jsdelivr.net/gh/johan/world.geo.json@master/countries.geo.json')
             .then(res => res.json())
             .then(data => {
@@ -291,7 +295,6 @@
                 rysujGranice(); 
             });
 
-        // Funkcja malująca państwa
         function rysujGranice() {
             if (!worldGeoJson) return; 
             if (geoJsonLayer) map.removeLayer(geoJsonLayer); 
@@ -313,16 +316,16 @@
 
                     if (isVisited) {
                         return {
-                            color: "var(--primary)", // Kontur 
+                            color: "var(--primary)",
                             weight: 1,
-                            fillColor: "var(--primary)", // Lekko czerwony kolor
+                            fillColor: "var(--primary)",
                             fillOpacity: 0.2 
                         };
                     } else {
-                        return { weight: 0, fillOpacity: 0 }; // Reszta krajów ukryta
+                        return { weight: 0, fillOpacity: 0 };
                     }
                 },
-                interactive: false // Nie blokuje klikania
+                interactive: false 
             }).addTo(map);
         }
 
@@ -330,7 +333,7 @@
             const q = query(collection(db, "places"), orderBy("createdAt", "asc"));
             onSnapshot(q, (snapshot) => {
                 markers.clearLayers();
-                globalPlacesData = []; // Czyszczenie przed pętlą
+                globalPlacesData = []; 
 
                 let totalMoney = 0; const uniqueCountries = new Set(); const countryStats = {}; 
                 let totalTrips = 0;
@@ -339,7 +342,6 @@
                     totalTrips++;
                     const data = docSnap.data(); 
                     
-                    // Zapisujemy współrzędne do bazy dla skryptu malującego kraje
                     globalPlacesData.push({ lat: data.lat, lng: data.lng });
 
                     const cKey = data.displayCountry || data.country; 
@@ -368,7 +370,6 @@
                 document.getElementById('count-trips').innerText = totalTrips; 
                 document.getElementById('total-cost').innerText = totalMoney.toLocaleString('pl-PL') + ' zł';
 
-                // Po pobraniu wszystkich pinezek przerysowujemy granice
                 rysujGranice();
 
                 countryListContainer.innerHTML = ""; 
