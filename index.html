@@ -5,10 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Kuba & Ola - Mapa Wspomnień</title>
     
+<link rel="apple-touch-icon" href="ik.jpg">
+<link rel="icon" type="image/png" href="ik.jpg">	
+
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6.5.0/turf.min.js"></script>
+
     <style>
         :root {
             --primary: #ff6b6b;
@@ -21,7 +26,6 @@
 
         body, html { margin: 0; padding: 0; height: 100%; font-family: 'Montserrat', sans-serif; background-color: #121212; color: var(--text-main); overflow: hidden; position: relative; }
         
-        /* POPRAWKA: Mapa rozciągnięta absolutnie na pełen ekran z ciemnym tłem pod spodem */
         #map { position: absolute; top: 0; bottom: 0; left: 0; right: 0; z-index: 1; background-color: #141414 !important; }
 
         .glass-panel { background: var(--dark-glass); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4); }
@@ -274,17 +278,71 @@
 
         function czyscFormularz() { inputName.value = ""; inputCountry.value = ""; inputCost.value = ""; inputSummary.value = ""; inputPhotos.value = ""; clickedLatLng = null; }
 
+        // DODANO: Globalne zmienne dla granic państw i bazy pinezek
+        let worldGeoJson = null;
+        let geoJsonLayer = null;
+        let globalPlacesData = []; 
+
+        // Pobieranie mapy granic (GeoJSON) z CDN
+        fetch('https://cdn.jsdelivr.net/gh/johan/world.geo.json@master/countries.geo.json')
+            .then(res => res.json())
+            .then(data => {
+                worldGeoJson = data;
+                rysujGranice(); 
+            });
+
+        // Funkcja malująca państwa
+        function rysujGranice() {
+            if (!worldGeoJson) return; 
+            if (geoJsonLayer) map.removeLayer(geoJsonLayer); 
+
+            geoJsonLayer = L.geoJSON(worldGeoJson, {
+                style: function(feature) {
+                    let isVisited = false;
+                    for (let i = 0; i < globalPlacesData.length; i++) {
+                        if (feature.geometry) {
+                            try {
+                                const pt = turf.point([globalPlacesData[i].lng, globalPlacesData[i].lat]);
+                                if (turf.booleanPointInPolygon(pt, feature)) {
+                                    isVisited = true;
+                                    break;
+                                }
+                            } catch (e) {}
+                        }
+                    }
+
+                    if (isVisited) {
+                        return {
+                            color: "var(--primary)", // Kontur 
+                            weight: 1,
+                            fillColor: "var(--primary)", // Lekko czerwony kolor
+                            fillOpacity: 0.2 
+                        };
+                    } else {
+                        return { weight: 0, fillOpacity: 0 }; // Reszta krajów ukryta
+                    }
+                },
+                interactive: false // Nie blokuje klikania
+            }).addTo(map);
+        }
+
         if(db) {
             const q = query(collection(db, "places"), orderBy("createdAt", "asc"));
             onSnapshot(q, (snapshot) => {
                 markers.clearLayers();
+                globalPlacesData = []; // Czyszczenie przed pętlą
+
                 let totalMoney = 0; const uniqueCountries = new Set(); const countryStats = {}; 
                 let totalTrips = 0;
 
                 snapshot.forEach((docSnap) => {
                     totalTrips++;
+                    const data = docSnap.data(); 
                     
-                    const data = docSnap.data(); const cKey = data.displayCountry || data.country; 
+                    // Zapisujemy współrzędne do bazy dla skryptu malującego kraje
+                    globalPlacesData.push({ lat: data.lat, lng: data.lng });
+
+                    const cKey = data.displayCountry || data.country; 
                     if(data.cost) totalMoney += data.cost;
                     if(cKey) uniqueCountries.add(cKey);
 
@@ -310,9 +368,12 @@
                 document.getElementById('count-trips').innerText = totalTrips; 
                 document.getElementById('total-cost').innerText = totalMoney.toLocaleString('pl-PL') + ' zł';
 
+                // Po pobraniu wszystkich pinezek przerysowujemy granice
+                rysujGranice();
+
                 countryListContainer.innerHTML = ""; 
                 const sortedCountries = Object.keys(countryStats).sort();
-                if(sortedCountries.length === 0) countryListContainer.innerHTML = "<p style='color:#aaa; text-align:center; margin-top: 30px;'>Kliknij z przytrzymaniem na mapę i dodaj pierwszą podróż!</p>";
+                if(sortedCountries.length === 0) countryListContainer.innerHTML = "<p style='color:#aaa; text-align:center; margin-top: 30px;'>Przytrzymaj palec na mapie i dodaj pierwszą podróż!</p>";
 
                 sortedCountries.forEach(countryName => {
                     const stats = countryStats[countryName];
