@@ -19,8 +19,10 @@
             --text-muted: #aaaaaa;
         }
 
-        body, html { margin: 0; padding: 0; height: 100%; font-family: 'Montserrat', sans-serif; background-color: #121212; color: var(--text-main); overflow: hidden; }
-        #map { height: 100vh; width: 100vw; z-index: 1; }
+        body, html { margin: 0; padding: 0; height: 100%; font-family: 'Montserrat', sans-serif; background-color: #121212; color: var(--text-main); overflow: hidden; position: relative; }
+        
+        /* POPRAWKA: Mapa rozciągnięta absolutnie na pełen ekran z ciemnym tłem pod spodem */
+        #map { position: absolute; top: 0; bottom: 0; left: 0; right: 0; z-index: 1; background-color: #141414 !important; }
 
         .glass-panel { background: var(--dark-glass); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4); }
 
@@ -92,14 +94,12 @@
         .btn-delete-pin:hover { background: var(--primary); color: white; }
 
         @media (max-width: 600px) {
-            /* Obniżono top do 45px na telefonach */
             #header { top: 45px; padding: 12px 10px; width: 90%; }
             #header h1 { font-size: 18px; }
             .stats-container { gap: 5px; font-size: 10px; }
             .stat-value { font-size: 14px; }
             
             #sidebar { width: 100%; right: -100%; }
-            /* Zmniejszony przycisk Dziennika na dole ekranu */
             #sidebar-toggle { top: auto; bottom: 25px; left: 50%; transform: translateX(-50%); right: auto; padding: 10px 18px; font-size: 13px; border-radius: 30px;}
             .leaflet-control-zoom { display: none; }
         }
@@ -169,7 +169,6 @@
             db = getFirestore(app);
         } catch(e) { console.log("Pamiętaj o podaniu konfiguracji Firebase!"); }
 
-        // PRZYWRÓCONA nieskończona mapa
         const map = L.map('map', { zoomControl: false }).setView([50.0, 15.0], 4);
         L.control.zoom({ position: 'bottomleft' }).addTo(map); 
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap', subdomains: 'abcd', maxZoom: 20 }).addTo(map);
@@ -204,7 +203,6 @@
             }
         };
 
-        // ZMIANA NA: contextmenu (długie przytrzymanie na telefonie lub prawy przycisk myszy na PC)
         map.on('contextmenu', async function(e) {
             clickedLatLng = e.latlng;
             modal.style.display = 'flex';
