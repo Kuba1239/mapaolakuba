@@ -27,7 +27,6 @@
         #header { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); border-radius: 20px; padding: 15px 30px; text-align: center; z-index: 1000; width: max-content; min-width: 280px; max-width: 90%; transition: all 0.3s ease; }
         #header h1 { margin: 0 0 10px 0; font-size: 22px; font-weight: 700; background: -webkit-linear-gradient(45deg, #ff6b6b, #ffb88e); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         
-        /* Delikatnie zmniejszony gap z 20px na 15px żeby 3 statystyki dobrze wyglądały */
         .stats-container { display: flex; justify-content: space-around; gap: 15px; font-size: 12px; font-weight: 500; color: #e0e0e0; }
         .stat-box { display: flex; flex-direction: column; align-items: center; }
         .stat-value { font-size: 18px; font-weight: 700; color: var(--primary); margin-top: 4px; }
@@ -93,14 +92,15 @@
         .btn-delete-pin:hover { background: var(--primary); color: white; }
 
         @media (max-width: 600px) {
-            /* Poszerzony lekko na mobile, żeby zmieścić 3 elementy obok siebie */
-            #header { top: 15px; padding: 12px 10px; width: 90%; }
+            /* Obniżono top do 45px na telefonach */
+            #header { top: 45px; padding: 12px 10px; width: 90%; }
             #header h1 { font-size: 18px; }
             .stats-container { gap: 5px; font-size: 10px; }
             .stat-value { font-size: 14px; }
             
             #sidebar { width: 100%; right: -100%; }
-            #sidebar-toggle { top: auto; bottom: 25px; left: 50%; transform: translateX(-50%); right: auto; padding: 15px 25px; font-size: 16px; border-radius: 30px;}
+            /* Zmniejszony przycisk Dziennika na dole ekranu */
+            #sidebar-toggle { top: auto; bottom: 25px; left: 50%; transform: translateX(-50%); right: auto; padding: 10px 18px; font-size: 13px; border-radius: 30px;}
             .leaflet-control-zoom { display: none; }
         }
     </style>
@@ -169,9 +169,10 @@
             db = getFirestore(app);
         } catch(e) { console.log("Pamiętaj o podaniu konfiguracji Firebase!"); }
 
-        const map = L.map('map', { zoomControl: false, minZoom: 3 }).setView([50.0, 15.0], 4);
+        // PRZYWRÓCONA nieskończona mapa
+        const map = L.map('map', { zoomControl: false }).setView([50.0, 15.0], 4);
         L.control.zoom({ position: 'bottomleft' }).addTo(map); 
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap', subdomains: 'abcd', maxZoom: 20, noWrap: true }).addTo(map);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap', subdomains: 'abcd', maxZoom: 20 }).addTo(map);
 
         let markers = L.layerGroup().addTo(map);
         let clickedLatLng = null;
@@ -203,7 +204,8 @@
             }
         };
 
-        map.on('click', async function(e) {
+        // ZMIANA NA: contextmenu (długie przytrzymanie na telefonie lub prawy przycisk myszy na PC)
+        map.on('contextmenu', async function(e) {
             clickedLatLng = e.latlng;
             modal.style.display = 'flex';
             inputName.focus();
@@ -279,10 +281,10 @@
             onSnapshot(q, (snapshot) => {
                 markers.clearLayers();
                 let totalMoney = 0; const uniqueCountries = new Set(); const countryStats = {}; 
-                let totalTrips = 0; // Dodana zmienna do liczenia łącznej liczby podróży/pinezek
+                let totalTrips = 0;
 
                 snapshot.forEach((docSnap) => {
-                    totalTrips++; // Zlicza każdą pinezkę
+                    totalTrips++;
                     
                     const data = docSnap.data(); const cKey = data.displayCountry || data.country; 
                     if(data.cost) totalMoney += data.cost;
@@ -307,12 +309,12 @@
                 });
 
                 document.getElementById('count-countries').innerText = uniqueCountries.size;
-                document.getElementById('count-trips').innerText = totalTrips; // Wypisanie ilości podróży
+                document.getElementById('count-trips').innerText = totalTrips; 
                 document.getElementById('total-cost').innerText = totalMoney.toLocaleString('pl-PL') + ' zł';
 
                 countryListContainer.innerHTML = ""; 
                 const sortedCountries = Object.keys(countryStats).sort();
-                if(sortedCountries.length === 0) countryListContainer.innerHTML = "<p style='color:#aaa; text-align:center; margin-top: 30px;'>Kliknij na mapę i dodaj pierwszą podróż!</p>";
+                if(sortedCountries.length === 0) countryListContainer.innerHTML = "<p style='color:#aaa; text-align:center; margin-top: 30px;'>Kliknij z przytrzymaniem na mapę i dodaj pierwszą podróż!</p>";
 
                 sortedCountries.forEach(countryName => {
                     const stats = countryStats[countryName];
